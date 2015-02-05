@@ -1,4 +1,4 @@
-minetest.register_entity("tutorial:bot", {
+minetest.register_entity("bot:bot", {
     hp_max = 1,
     physical = true,
     weight = 5,
@@ -15,7 +15,7 @@ minetest.register_entity("tutorial:bot", {
     automatic_rotate = false,
 })
 
-bots = {}
+bots = nil
 minetest.register_on_chat_message(function(name, message)
     local player = minetest.get_player_by_name(name)
     if message == "create" then
@@ -25,7 +25,7 @@ minetest.register_on_chat_message(function(name, message)
         end
         bot = minetest.add_entity({x = math.floor(pos.x),
                                    y = math.floor(pos.y)+1,
-                                   z = math.floor(pos.z)}, "tutorial:bot")
+                                   z = math.floor(pos.z)}, "bot:bot")
     elseif message == "destroy" then
         if bot ~= nil then
             bot:remove()
