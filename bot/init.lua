@@ -3,10 +3,10 @@ minetest.register_entity("bot:bot", {
     physical = true,
     weight = 5,
     collisionbox = {-0.5,-0.5,-0.5, 0.5,0.5,0.5},
-    visual = "sprite",
+    visual = "mesh",
     visual_size = {x=1, y=1},
-    mesh = "model",
-    textures = {}, -- number of required textures depends on visual
+    mesh = "robot.x",
+    textures = {"robot.png"},
     colors = {}, -- number of required colors depends on visual
     spritediv = {x=1, y=1},
     initial_sprite_basepos = {x=0, y=0},
@@ -35,7 +35,7 @@ minetest.register_on_chat_message(function(name, message)
         local player = minetest.get_player_by_name(name)
         local pos = player:getpos()
         bots[bot_name] = minetest.add_entity({x = math.floor(pos.x),
-                                              y = math.floor(pos.y)+1,
+                                              y = math.floor(pos.y)+1.5,
                                               z = math.floor(pos.z)},
                                              "bot:bot")
         minetest.chat_send_player(name, 'Bot "' .. bot_name .. '" created.')
@@ -47,13 +47,15 @@ minetest.register_on_chat_message(function(name, message)
         return
     end
     local position = bot:getpos()
+    position.y = position.y - 1
 
-    if command == "destroy" then
+    if command == 'test' then
+        minetest.chat_send_player(name, 'found ' .. minetest.get_node(position).name:sub(9))
+    elseif command == "destroy" then
         bot:remove()
         bots[bot_name] = nil
         minetest.chat_send_player(name, "Destroyed bot.")
     elseif command == "remove" then
-        position.y = position.y - 1
         minetest.remove_node(position)
     elseif command:sub(1, 5) == "place" then
         local block_name = string.match(command, "^place (.+)$")
@@ -61,11 +63,12 @@ minetest.register_on_chat_message(function(name, message)
             return
         end
         local node_name = "default:" .. block_name:gsub(" ", "_"):lower()
-        minetest.place_node(position, {name=node_name})
+        minetest.set_node(position, {name=node_name})
     elseif string.len(command) == 2 then
         local sign = command:sub(1, 1)
         local axis = command:sub(2, 2)
         if directions[sign] and position[axis] then
+            position = bot:getpos()
             position[axis] = position[axis] + directions[sign]
             bot:moveto(position, true)
         end
