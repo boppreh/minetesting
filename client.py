@@ -239,7 +239,7 @@ class MinetestClient(object):
     character on the running world, controlled by the methods exposed in this
     class.
     """
-    def __init__(self, server='localhost:30000', username='user', password='', on_message=print):
+    def __init__(self, server='localhost:30000', username='user', password='', on_message=id):
         """
         Creates a new Minetest Client to send remote commands.
 
@@ -313,6 +313,10 @@ class MinetestClient(object):
         self.protocol.disconnect()
 
     def _receive_and_process(self):
+        """
+        Receive commands from the server and process them synchronously. Most
+        commands are not implemented because we didn't have a need.
+        """
         while True:
             packet = self.protocol.receive_command()
             (command_type,), data = unpack('>H', packet[:2]), packet[2:]
@@ -373,9 +377,15 @@ if __name__ == '__main__':
 
     args = sys.argv[1:]
     assert len(args) <= 3, 'Too many arguments, expected no more than 3'
+    # Load hostname, username and password from the command line arguments.
+    # Defaults to localhost:30000, 'user' and empty password (for public
+    # servers).
     client = MinetestClient(*args)
+    # Print chat messages received from other players.
+    client.on_message = print
     try:
-        while True:
+        # Send as chat message any line typed in the standard input.
+        while not sys.stdin.closed:
             line = sys.stdin.readline().rstrip()
             client.say(line)
     finally:
