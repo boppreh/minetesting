@@ -2,6 +2,9 @@
 __pycache__/
 *.py[cod]
 
+# Vim swap files
+*.swp
+
 # C extensions
 *.so
 
