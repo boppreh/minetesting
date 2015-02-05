@@ -15,36 +15,59 @@ minetest.register_entity("bot:bot", {
     automatic_rotate = false,
 })
 
-bots = nil
+bots = {}
+directions = {}
+directions["+"] = 1
+directions["-"] = -1
 minetest.register_on_chat_message(function(name, message)
-    local player = minetest.get_player_by_name(name)
-    if message == "create" then
+    local bot_name, command = string.match(message, "^bot (%w+) (.+)$")
+    print('Processing', command, 'for bot', bot_name)
+    if bot_name == nil then
+        return
+    end
+
+    if command == "create" then
+        if bots[bot_name] then
+            minetest.chat_send_player(name, "Destroying existing bot...")
+            bots[bot_name]:remove()
+        end
+
+        local player = minetest.get_player_by_name(name)
         local pos = player:getpos()
-        if bot ~= nil then
-            bot:remove()
+        bots[bot_name] = minetest.add_entity({x = math.floor(pos.x),
+                                              y = math.floor(pos.y)+1,
+                                              z = math.floor(pos.z)},
+                                             "bot:bot")
+        minetest.chat_send_player(name, 'Bot "' .. bot_name .. '" created.')
+    end
+
+    local bot = bots[bot_name]
+    if bot == nil then
+        minetest.chat_send_player(name, "There's no bot named " .. bot_name)
+        return
+    end
+    local position = bot:getpos()
+
+    if command == "destroy" then
+        bot:remove()
+        bots[bot_name] = nil
+        minetest.chat_send_player(name, "Destroyed bot.")
+    elseif command == "remove" then
+        position.y = position.y - 1
+        minetest.remove_node(position)
+    elseif command:sub(1, 5) == "place" then
+        local block_name = string.match(command, "^place (.+)$")
+        if block_name == nil or block_name == "" then
+            return
         end
-        bot = minetest.add_entity({x = math.floor(pos.x),
-                                   y = math.floor(pos.y)+1,
-                                   z = math.floor(pos.z)}, "bot:bot")
-    elseif message == "destroy" then
-        if bot ~= nil then
-            bot:remove()
-            bot = nil
-        end
-    elseif message == "place" then
-        minetest.place_node(bot:getpos(), {name="default:lava_source"})
-    elseif message == 'x' or 'message' == y or 'message' == 'x' then
-        local y = bot:getpos().y
-        local x = bot:getpos().x
-        local z = bot:getpos().z
-        if message == "x" then
-            bot:moveto({x=x+1,y=y,z=z}, true)
-        end
-        if message == "y" then
-            bot:moveto({x=x,y=y+1,z=z}, true)
-        end
-        if message == "z" then
-            bot:moveto({x=x,y=y,z=z+1}, true)
+        local node_name = "default:" .. block_name:gsub(" ", "_"):lower()
+        minetest.place_node(position, {name=node_name})
+    elseif string.len(command) == 2 then
+        local sign = command:sub(1, 1)
+        local axis = command:sub(2, 2)
+        if directions[sign] and position[axis] then
+            position[axis] = position[axis] + directions[sign]
+            bot:moveto(position, true)
         end
     end
 end)
