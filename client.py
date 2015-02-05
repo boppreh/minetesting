@@ -368,6 +368,29 @@ class MinetestClient(object):
             else:
                 print('Unknown command type {}.'.format(hex(command_type)))
 
+class MinetestRobotController(MinetestClient):
+    def __init__(self, host='localhost:30000', user='user', password=''):
+        MinetestClient.__init__(self, host, user, password)
+
+        self.test_buffer = Queue()
+        self.on_message = self._distinguish_message
+
+    def command(self, robot, message):
+        self.say('bot {} {}'.format(robot, message))
+
+    def _distinguish_message(self, message):
+        if message.startswith('Server -!- found '):
+            block_name = message[len('Server -!- found '):] or 'air'
+            self.test_buffer.put(block_name)
+        else:
+            print(message)
+
+    def test(self, robot):
+        self.command(robot, 'test')
+        return self.test_buffer.get()
+
+    def disconnect(self):
+        MinetestClient.disconnect(self)
 
 
 if __name__ == '__main__':
@@ -375,18 +398,13 @@ if __name__ == '__main__':
     import time
     import math
 
-    args = sys.argv[1:]
-    assert len(args) <= 3, 'Too many arguments, expected no more than 3'
-    # Load hostname, username and password from the command line arguments.
-    # Defaults to localhost:30000, 'user' and empty password (for public
-    # servers).
-    client = MinetestClient(*args)
-    # Print chat messages received from other players.
-    client.on_message = print
-    try:
-        # Send as chat message any line typed in the standard input.
-        while not sys.stdin.closed:
-            line = sys.stdin.readline().rstrip()
-            client.say(line)
-    finally:
-        client.protocol.disconnect()
+    from flask import Flask, request
+    app = Flask(__name__)
+
+    controller = MinetestRobotController()
+
+    @app.route("/")
+    def command():
+        controller.command(request.args.get('name'), request.args.get('command'))
+
+    app.run()
