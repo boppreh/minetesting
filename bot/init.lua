@@ -50,11 +50,13 @@ minetest.register_on_chat_message(function(name, message)
     position.y = position.y - 1
 
     if command == 'test' then
-        minetest.chat_send_player(name, 'found ' .. minetest.get_node(position).name:sub(9))
+        local node = minetest.get_node(position)
+        local node_name = name:sub(string.len("default:"))
+        minetest.chat_send_player(name, node_name)
     elseif command == "destroy" then
         bot:remove()
         bots[bot_name] = nil
-        minetest.chat_send_player(name, "Destroyed bot.")
+        minetest.chat_send_player(name, "destroyed")
     elseif command == "remove" then
         minetest.remove_node(position)
     elseif command:sub(1, 5) == "place" then
@@ -64,6 +66,7 @@ minetest.register_on_chat_message(function(name, message)
         end
         local node_name = "default:" .. block_name:gsub(" ", "_"):lower()
         minetest.set_node(position, {name=node_name})
+        minetest.chat_send_player(name, "placed")
     elseif string.len(command) == 2 then
         local sign = command:sub(1, 1)
         local axis = command:sub(2, 2)
@@ -71,6 +74,7 @@ minetest.register_on_chat_message(function(name, message)
             position = bot:getpos()
             position[axis] = position[axis] + directions[sign]
             bot:moveto(position, true)
+            minetest.chat_send_player(name, "moved")
         end
     end
 end)

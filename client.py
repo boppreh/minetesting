@@ -372,22 +372,19 @@ class MinetestRobotController(MinetestClient):
     def __init__(self, host='localhost:30000', user='user', password=''):
         MinetestClient.__init__(self, host, user, password)
 
-        self.test_buffer = Queue()
+        self.answer_buffer = Queue()
         self.on_message = self._distinguish_message
 
     def command(self, robot, message):
         self.say('bot {} {}'.format(robot, message))
+        return self.answer_buffer.get()
 
     def _distinguish_message(self, message):
-        if message.startswith('Server -!- found '):
-            block_name = message[len('Server -!- found '):] or 'air'
-            self.test_buffer.put(block_name)
+        if message.startswith('Server -!- '):
+            block_name = message[len('Server -!- '):]
+            self.answer_buffer.put(block_name)
         else:
             print(message)
-
-    def test(self, robot):
-        self.command(robot, 'test')
-        return self.test_buffer.get()
 
     def disconnect(self):
         MinetestClient.disconnect(self)
@@ -405,6 +402,9 @@ if __name__ == '__main__':
 
     @app.route("/")
     def command():
-        controller.command(request.args.get('name'), request.args.get('command'))
+        return controller.command(request.args.get('name'), request.args.get('command'))
 
-    app.run()
+    try:
+        app.run(port=50209)
+    finally:
+        controller.disconnect()
