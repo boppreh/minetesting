@@ -12,6 +12,7 @@ from binascii import hexlify
 from threading import Thread, Semaphore
 from queue import Queue
 from collections import defaultdict
+import math
 
 # Packet types.
 CONTROL = 0x00
@@ -293,20 +294,39 @@ class MinetestClient(object):
         x = self.position[0] + delta_position[0]
         y = self.position[1] + delta_position[1]
         z = self.position[2] + delta_position[2]
-        yaw = self.angle[0] + delta_angle[0]
-        pitch = self.angle[1] + delta_angle[1]
-        self.teleport(position=(x, y, z), angle=(yaw, pitch), key=key)
+        pitch = self.angle[0] + delta_angle[0]
+        yaw = self.angle[1] + delta_angle[1]
+        self.teleport(position=(x, y, z), angle=(pitch, yaw), key=key)
 
-    def teleport(self, position=(0,0,0), speed=(0,0,0), angle=(0,0), key=0x01):
+    def teleport(self, position=None, speed=(0,0,0), angle=None, key=0x01):
         """ Moves to an absolute position. """
-        transformation = lambda k: int(k*1000)
-        x, y, z = map(transformation, position)
-        dx, dy, dz = map(transformation, speed)
-        yaw, pitch = map(transformation, angle)
-        packet = pack('>H3i3i2iI', TOSERVER_PLAYERPOS, x, y, z, dx, dy, dz, yaw, pitch, key)
+        position = position or self.position
+        angle = angle or self.angle
+
+        x, y, z = map(lambda k: int(k*1000), position)
+        dx, dy, dz = map(lambda k: int(k*100), speed)
+        pitch, yaw = map(lambda k: int(k*100), angle)
+        packet = pack('>H3i3i2iI', TOSERVER_PLAYERPOS, x, y, z, dx, dy, dz, pitch, yaw, key)
         self.protocol.send_command(packet)
         self.position = position
         self.angle = angle
+
+    def turn(self, degrees=90):
+        """
+        Makes the character face a different direction. Amount of degrees can
+        be negative.
+        """
+        new_angle = (self.angle[0], self.angle[1] + degrees)
+        self.teleport(angle=new_angle)
+
+    def walk(self, distance=1):
+        """
+        Moves a number of blocks forward, relative to the direction the
+        character is looking.
+        """
+        dx = distance * math.cos((90 + self.angle[1]) / 180 * math.pi)
+        dz = distance * math.sin((90 + self.angle[1]) / 180 * math.pi)
+        self.move((dx, 0, dz))
 
     def disconnect(self):
         """ Disconnects the client, removing the character from the world. """
@@ -325,9 +345,9 @@ class MinetestClient(object):
                 # No useful info here.
                 pass
             elif command_type == TOCLIENT_MOVE_PLAYER:
-                x1000, y1000, z1000, pitch1000, yaw1000 = unpack('>3i2i', data)
-                self.position = (x1000/1000, y1000/1000, z1000/1000)
-                self.angle = (yaw1000/1000, pitch1000/1000)
+                x10000, y10000, z10000, pitch1000, yaw1000 = unpack('>3i2i', data)
+                self.position = (x10000/10000, y10000/10000, z10000/10000)
+                self.angle = (pitch1000/1000, yaw1000/1000)
                 self.init_lock.release()
             elif command_type == TOCLIENT_CHAT_MESSAGE:
                 length, bin_message = unpack('>H', data[:2]), data[2:]
@@ -372,7 +392,6 @@ class MinetestClient(object):
 if __name__ == '__main__':
     import sys
     import time
-    import math
 
     args = sys.argv[1:]
     assert len(args) <= 3, 'Too many arguments, expected no more than 3'
@@ -380,9 +399,9 @@ if __name__ == '__main__':
     # Defaults to localhost:30000, 'user' and empty password (for public
     # servers).
     client = MinetestClient(*args)
-    # Print chat messages received from other players.
-    client.on_message = print
     try:
+        # Print chat messages received from other players.
+        client.on_message = print
         # Send as chat message any line typed in the standard input.
         while not sys.stdin.closed:
             line = sys.stdin.readline().rstrip()
