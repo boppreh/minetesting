@@ -27,7 +27,6 @@ CONTROLTYPE_PING = 0x02
 
 # Initial sequence number for RELIABLE-type packets.
 SEQNUM_INITIAL = 0xFFDC
-SEQNUM_MOD = 0x10000
 
 # Protocol id.
 PROTOCOL_ID = 0x4F457403
@@ -58,6 +57,9 @@ TOCLIENT_HP = 0x33
 TOCLIENT_MOVE_PLAYER = 0x34
 TOCLIENT_ACCESS_DENIED = 0x35
 TOCLIENT_DEATHSCREEN = 0x37
+TOCLIENT_NODEDEF = 0x3a
+TOCLIENT_ANNOUNCE_MEDIA = 0x3c
+TOCLIENT_ITEMDEF = 0x3d
 TOCLIENT_PLAY_SOUND = 0x3F
 TOCLIENT_STOP_SOUND = 0x40
 TOCLIENT_PRIVILEGES = 0x41
@@ -143,7 +145,7 @@ class MinetestClientProtocol(object):
         Sends a reliable message. This message can be a packet of another
         type, such as CONTROL or ORIGINAL.
         """
-        packet = pack('>BH', RELIABLE, self.seqnum % SEQNUM_MOD) + message
+        packet = pack('>BH', RELIABLE, self.seqnum & 0xFFFF) + message
         self.seqnum += 1
         self._send(packet)
 
@@ -171,8 +173,7 @@ class MinetestClientProtocol(object):
         be processed;
         - ORIGINAL, which designates it's a command and it's put in the receive
         buffer;
-        - or SPLIT, used to send large data (unimplemented because we don't
-          need visuals or to see the entire world).
+        - or SPLIT, used to send large data.
         """
         packet_type, data = packet[0], packet[1:]
 
@@ -197,10 +198,6 @@ class MinetestClientProtocol(object):
         elif packet_type == ORIGINAL:
             self.receive_buffer.put(data)
         elif packet_type == SPLIT:
-            # We can decode SPLIT packets, but the results are not making any
-            # sense. Since we don't use the values passed here, we can safely
-            # ignore them.
-            return
             header_size = calcsize('>HHH')
             split_header, split_data = data[:header_size], data[header_size:]
             seqnumber, chunk_count, chunk_num = unpack('>HHH', split_header)
@@ -209,7 +206,7 @@ class MinetestClientProtocol(object):
                 complete = []
                 try:
                     for i in range(chunk_count):
-                        complete.append(self.split_buffers[seqnumber][chunk_num])
+                        complete.append(self.split_buffers[seqnumber][i])
                 except KeyError:
                     # We are missing data, ignore and wait for resend.
                     pass
@@ -380,6 +377,12 @@ class MinetestClient(object):
             elif command_type == TOCLIENT_PLAY_SOUND:
                 pass
             elif command_type == TOCLIENT_STOP_SOUND:
+                pass
+            elif command_type == TOCLIENT_NODEDEF:
+                pass
+            elif command_type == TOCLIENT_ANNOUNCE_MEDIA:
+                pass
+            elif command_type == TOCLIENT_ITEMDEF:
                 pass
             elif command_type == TOCLIENT_ACCESS_DENIED:
                 length, bin_message = unpack('>H', data[:2]), data[2:]
