@@ -1,4 +1,5 @@
 from client import MinetestClient
+from queue import Queue
 
 class MinetestRobotController(MinetestClient):
     def __init__(self, host='localhost:30000', user='user', password=''):
@@ -27,14 +28,14 @@ if __name__ == '__main__':
     import time
     import math
 
-    from flask import Flask, request
+    from flask import Flask
     app = Flask(__name__)
 
     controller = MinetestRobotController()
 
-    @app.route("/")
-    def command():
-        return controller.command(request.args.get('name'), request.args.get('command'))
+    @app.route("/<name>/<command>")
+    def command(name, command):
+        return controller.command(name, command)
 
     try:
         app.run(port=50209)
