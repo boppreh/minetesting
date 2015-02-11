@@ -1,5 +1,5 @@
 minetest.register_entity("bot:bot", {
-    hp_max = 1,
+    hp_max = 1000,
     physical = true,
     weight = 5,
     collisionbox = {-0.5,-0.5,-0.5, 0.5,0.5,0.5},
@@ -16,10 +16,13 @@ minetest.register_entity("bot:bot", {
     groups = {immortal=1},
 })
 
+function move(pos, angle, distance)
+    return {x = math.floor(.5 + pos.x + distance * math.cos(angle)),
+            y = math.floor(pos.y),
+            z = math.floor(.5 + pos.z + distance * math.sin(angle))}
+end
+
 bots = {}
-directions = {}
-directions["+"] = 1
-directions["-"] = -1
 minetest.register_on_chat_message(function(name, message)
     local bot_name, command = string.match(message, "^bot (%w+) (.+)$")
     print('Processing', command, 'for bot', bot_name)
@@ -37,9 +40,8 @@ minetest.register_on_chat_message(function(name, message)
         local pos = player:getpos()
         local yaw = player:get_look_yaw()
         local distance = 5
-        local bot_pos = {x = math.floor(.5 + pos.x + distance * math.cos(yaw)),
-                         y = math.floor(pos.y)+1.5,
-                         z = math.floor(.5 + pos.z + distance * math.sin(yaw))}
+        local bot_pos = move(player:getpos(), player:get_look_yaw(), 5)
+        bot_pos.y = bot_pos.y + 1.5
         bots[bot_name] = minetest.add_entity(bot_pos,
                                              "bot:bot")
         minetest.chat_send_player(name, 'Bot "' .. bot_name .. '" criado.')
@@ -75,31 +77,28 @@ minetest.register_on_chat_message(function(name, message)
     elseif command:sub(1, 5) == "mover" then
         local direction_name = string.match(command, "^mover (.+)$")
         position = bot:getpos()
-        local axis
-        local direction
+        local yaw = bot:getyaw()
         if direction_name == "frente" then
-            axis = "z"
-            direction = 1
+            position = move(position, yaw + math.pi/2, 1)
         elseif direction_name == "tras" then
-            axis = "z"
-            direction = -1
+            yaw = yaw - math.pi
+            position = move(position, yaw + math.pi/2, 1)
         elseif direction_name == "direita" then
-            axis = "x"
-            direction = 1
+            yaw = yaw - math.pi / 2
+            position = move(position, yaw + math.pi/2, 1)
         elseif direction_name == "esquerda" then
-            axis = "x"
-            direction = -1
+            yaw = yaw + math.pi / 2
+            position = move(position, yaw + math.pi/2, 1)
         elseif direction_name == "cima" then
-            axis = "y"
-            direction = 1
+            position.y = position.y + 1
         elseif direction_name == "baixo" then
-            axis = "y"
-            direction = -1
+            position.y = position.y - 1
         else
             minetest.chat_send_player(name, "direcao invalida")
             return
         end
-        position[axis] = position[axis] + direction
+        bot:setyaw(yaw)
+        position.y = position.y + 0.5
         bot:moveto(position, true)
         minetest.chat_send_player(name, "movido")
     else
