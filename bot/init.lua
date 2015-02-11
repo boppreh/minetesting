@@ -34,9 +34,12 @@ minetest.register_on_chat_message(function(name, message)
 
         local player = minetest.get_player_by_name(name)
         local pos = player:getpos()
-        bots[bot_name] = minetest.add_entity({x = math.floor(pos.x),
-                                              y = math.floor(pos.y)+1.5,
-                                              z = math.floor(pos.z)},
+        local yaw = player:get_look_yaw()
+        local distance = 5
+        local bot_pos = {x = math.floor(.5 + pos.x + distance * math.cos(yaw)),
+                         y = math.floor(pos.y)+1.5,
+                         z = math.floor(.5 + pos.z + distance * math.sin(yaw))}
+        bots[bot_name] = minetest.add_entity(bot_pos,
                                              "bot:bot")
         minetest.chat_send_player(name, 'Bot "' .. bot_name .. '" criado.')
         return
