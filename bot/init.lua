@@ -26,9 +26,9 @@ minetest.register_on_chat_message(function(name, message)
         return
     end
 
-    if command == "create" then
+    if command == "criar" then
         if bots[bot_name] then
-            minetest.chat_send_player(name, "Destroying existing bot...")
+            minetest.chat_send_player(name, "Destruindo bot existente...")
             bots[bot_name]:remove()
         end
 
@@ -38,43 +38,67 @@ minetest.register_on_chat_message(function(name, message)
                                               y = math.floor(pos.y)+1.5,
                                               z = math.floor(pos.z)},
                                              "bot:bot")
-        minetest.chat_send_player(name, 'Bot "' .. bot_name .. '" created.')
+        minetest.chat_send_player(name, 'Bot "' .. bot_name .. '" criado.')
+        return
     end
 
     local bot = bots[bot_name]
     if bot == nil then
-        minetest.chat_send_player(name, "There's no bot named " .. bot_name)
+        minetest.chat_send_player(name, "Nao existe nenhum bot " .. bot_name)
         return
     end
     local position = bot:getpos()
     position.y = position.y - 1
 
-    if command == 'test' then
+    if command == 'testar' then
         local node = minetest.get_node(position)
         local node_name = name:sub(string.len("default:"))
         minetest.chat_send_player(name, node_name)
-    elseif command == "destroy" then
+    elseif command == "destruir" then
         bot:remove()
         bots[bot_name] = nil
-        minetest.chat_send_player(name, "destroyed")
-    elseif command == "remove" then
+        minetest.chat_send_player(name, "destruido")
+    elseif command == "remover" then
         minetest.remove_node(position)
-    elseif command:sub(1, 5) == "place" then
-        local block_name = string.match(command, "^place (.+)$")
+    elseif command:sub(1, 7) == "colocar" then
+        local block_name = string.match(command, "^colocar (.+)$")
         if block_name == nil or block_name == "" then
             return
         end
         local node_name = "default:" .. block_name:gsub(" ", "_"):lower()
         minetest.set_node(position, {name=node_name})
-        minetest.chat_send_player(name, "placed")
-    elseif string.len(command) == 2 then
-        local sign = command:sub(1, 1)
-        local axis = command:sub(2, 2)
-        if directions[sign] and position[axis] then
-            position = bot:getpos()
-            position[axis] = position[axis] + directions[sign]
-            bot:moveto(position, true)
-            minetest.chat_send_player(name, "moved")
+        minetest.chat_send_player(name, "colocado")
+    elseif command:sub(1, 5) == "mover" then
+        local direction_name = string.match(command, "^mover (.+)$")
+        position = bot:getpos()
+        local axis
+        local direction
+        if direction_name == "frente" then
+            axis = "z"
+            direction = 1
+        elseif direction_name == "tras" then
+            axis = "z"
+            direction = -1
+        elseif direction_name == "direita" then
+            axis = "x"
+            direction = 1
+        elseif direction_name == "esquerda" then
+            axis = "x"
+            direction = -1
+        elseif direction_name == "cima" then
+            axis = "y"
+            direction = 1
+        elseif direction_name == "baixo" then
+            axis = "y"
+            direction = -1
+        else
+            minetest.chat_send_player(name, "direcao invalida")
+            return
         end
+        position[axis] = position[axis] + direction
+        bot:moveto(position, true)
+        minetest.chat_send_player(name, "movido")
+    else
+        minetest.chat_send_player(name, "comando nao encontrado: " .. command)
     end
 end)
