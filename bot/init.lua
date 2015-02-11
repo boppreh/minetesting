@@ -13,6 +13,7 @@ minetest.register_entity("bot:bot", {
     is_visible = true,
     makes_footstep_sound = false,
     automatic_rotate = false,
+    groups = {immortal=1},
 })
 
 bots = {}
