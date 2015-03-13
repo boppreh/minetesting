@@ -1,7 +1,23 @@
+"""
+Script for exposing the Bot API via HTTP server.
+
+This script assumes there is a Minetest server running the Bot mod (found at
+`bot/`), and we want to allow third-parties to control such bots easily. This
+is done by connecting to the server, posing as a player, and proxy-ing messages
+received from an HTTP server.
+
+Run "python3 controller.py" to create an HTTP server that answers for
+"/<bot name>/<command>" requests, forwarding them to the server through a
+in-game character using chat commands.
+"""
 from client import MinetestClient
 from queue import Queue
 
 class MinetestRobotController(MinetestClient):
+    """
+    Creates a Minetest client specific for controlling bots by sending chat
+    commands through a temporary player.
+    """
     def __init__(self, host='localhost:30000', user='user', password=''):
         MinetestClient.__init__(self, host, user, password)
 
