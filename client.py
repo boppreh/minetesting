@@ -76,7 +76,7 @@ class MinetestClientProtocol(object):
     processes received messages in a separate thread and performs the initial
     handshake when created. Blocks until the handshake is finished.
 
-    TODO: resend unacknowledged messages.
+    TODO: resend unacknowledged messages and process out-of-order packets.
     """
     def __init__(self, host, username, password=''):
         if ':' in host:
@@ -137,7 +137,8 @@ class MinetestClientProtocol(object):
         self.send_command(b'')
 
     def disconnect(self):
-        """ Sends a RELIABLE without sequence number. """
+        """ Closes the connection. """
+        # The "disconnect" message is just a RELIABLE without sequence number.
         self._send(pack('>H', RELIABLE))
 
     def _send_reliable(self, message):
@@ -181,7 +182,7 @@ class MinetestClientProtocol(object):
             if len(data) == 1:
                 assert data[0] == CONTROLTYPE_PING
                 # Do nothing. PING is sent through a reliable packet, so the
-                # response was already sent we unwrapped it.
+                # response was already sent when we unwrapped it.
                 return
 
             control_type, value = unpack('>BH', data)
@@ -234,7 +235,7 @@ class MinetestClientProtocol(object):
 class MinetestClient(object):
     """
     Class for sending commands to a remote Minetest server. This creates a
-    character on the running world, controlled by the methods exposed in this
+    character in the running world, controlled by the methods exposed in this
     class.
     """
     def __init__(self, server='localhost:30000', username='user', password='', on_message=id):
@@ -248,6 +249,10 @@ class MinetestClient(object):
         """
         self.protocol = MinetestClientProtocol(server, username, password)
 
+        # We need to constantly listen for server messages to update our
+        # position, HP, etc. To avoid blocking the caller we create a new
+        # thread to process those messages, and wait until we have a confirmed
+        # connection.
         self.access_denied = None
         self.init_lock = Semaphore(0)
         thread = Thread(target=self._receive_and_process)
@@ -262,7 +267,7 @@ class MinetestClient(object):
 
         self.on_message = on_message
 
-        # HP is not a critical piece of information, so we assume it's full
+        # HP is not a critical piece of information for us, so we assume it's full
         # until the server says otherwise.
         self.hp = 20
 
