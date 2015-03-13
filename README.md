@@ -19,3 +19,5 @@ removing blocks. To install it just copy the entire `bot/` folder to
 Because the robots answer to regular chat commands, the Python client is able
 to login and say commands to the robot, giving a remote interface to control
 it.
+
+`controller.py` is used as the glue between Scratch and the Minetest bot, creating an HTTP server and forwarding commands.
