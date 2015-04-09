@@ -49,11 +49,20 @@ if __name__ == '__main__':
 
     controller = MinetestRobotController()
 
-    @app.route("/<name>/<command>")
+    @app.route("/poll")
+    @app.route("/reset_all")
+    def poll():
+        return ""
+
+    @app.route("/<command>/<parameter>/<name>")
+    def command_with_param(name, parameter, command):
+        return controller.command(name, command + " " + parameter)
+
+    @app.route("/<command>/<name>")
     def command(name, command):
         return controller.command(name, command)
 
     try:
-        app.run(port=50209)
+        app.run(port=50210)
     finally:
         controller.disconnect()
