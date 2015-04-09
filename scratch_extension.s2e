@@ -1,0 +1,58 @@
+{
+    "extensionName": "Avatar do Minetest",
+    "extensionPort": 50210,
+    "blockSpecs": [
+         [
+            "",
+            "Andar para frente %n passos",
+            "andar_para_frente",
+            "PASSOS",
+            1
+        ],
+         [
+            "",
+            "Girar para esquerda %n graus",
+            "girar_para_esquerda",
+            "GRAUS",
+            90
+        ],
+
+    [
+            "",
+            "Colocar %n blocos na sua frente",
+            "colocar_blocos",
+            "BLOCOS",
+            1        
+        ],
+
+    [
+            "",
+            "Selecionar item %n do inventario",
+            "selecionar_item",
+            "NUMERO DO ITEM",
+            1
+        ],
+
+    [
+            "",
+            "Abrir o Inventario",
+            "abrir_inventario",
+        ],
+
+    [
+            "",
+            "Usar ferramenta %n vezes",
+            "usar_ferramenta",
+            "VEZES",
+            1
+        ],
+   
+    [
+            "",
+            "Andar para tras %n passos",
+            "andar_para_tras",
+            "PASSOS",
+            1
+        ]
+    ]
+} 
